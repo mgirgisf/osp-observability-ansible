@@ -1,0 +1,13 @@
+---
+
+- name: Check if given path exists
+  file:
+    check_mode: true
+    path: "{{ item | split(':') | first }}"
+    state: present
+  register: has_to_be
+
+- name: Example using fail and when together
+  fail:
+    msg: "Volume mount {{ item }} does not exist"
+  when: has_to_be.changed == true

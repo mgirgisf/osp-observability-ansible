@@ -1,0 +1,50 @@
+---
+
+- name: Check if mount points exist
+  include_tasks: volume_check.yml
+  loop: {{ volumes }}
+
+- name: Prepare container root log directory
+  file:
+    path: /var/log/containers
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Prepare container log directory
+  file:
+    path: "/var/log/containers/{{ name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Prepare container config directory
+  file:
+    path: "{{ workdir }}/{{ name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Start a container and create systemd service for it
+  containers.podman.podman_container:
+    name: "{{ name }}"
+    image: "{{ image }}"
+    state: started
+    recreate: true
+    restart_policy: "always"
+    network: host
+    no_hosts: true
+    volume: {{ volumes }}
+    generate_systemd:
+      container_prefix: osp-observability
+      new: true
+      path: /etc/systemd/system/
+    register: result
+
+- name: Save container details
+  file:
+    path: "{{ workdir }}/{{ name }}/container.json"
+    content: result.container
